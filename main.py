@@ -216,7 +216,7 @@ def parse_args():
     )
     parser.add_argument(
         "--non_code_expert_indices",
-        nargs="?", type=int,
+        nargs="?", type=str,
     )
     return parser.parse_args()
 
