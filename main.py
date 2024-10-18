@@ -212,13 +212,11 @@ def parse_args():
     )
     parser.add_argument(
         "--code_expert_indices",
-        type=int,
-        nargs="+",
+        nargs="?", type=str,
     )
     parser.add_argument(
         "--non_code_expert_indices",
-        type=int,
-        nargs="+",
+        nargs="?", type=int,
     )
     return parser.parse_args()
 

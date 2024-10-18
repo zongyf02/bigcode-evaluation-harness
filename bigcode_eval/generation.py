@@ -110,10 +110,10 @@ def parallel_generations(
 
 
     expert_indices = None
-    if args.code_expert_indices is not None and args.non_code_expert_indices is not None:
+    if args.code_expert_indices and args.non_code_expert_indices:
         expert_indices = {
-            "code": args.code_expert_indices,
-            "non_code": args.non_code_expert_indices
+            "code": [int(i) for i in args.code_expert_indices.split(",")],
+            "non_code": [int(i) for i in args.non_code_expert_indices.split(",")]
         }
 
     ds_tokenized = TokenizedDataset(
