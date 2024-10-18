@@ -108,6 +108,14 @@ def parallel_generations(
         print(f"number of problems for this task is {n_tasks}")
     n_copies = ceil(args.n_samples / args.batch_size)
 
+
+    expert_indices = None
+    if args.code_expert_indices is not None and args.non_code_expert_indices is not None:
+        expert_indices = {
+            "code": args.code_expert_indices,
+            "non_code": args.non_code_expert_indices
+        }
+
     ds_tokenized = TokenizedDataset(
         task,
         dataset,
@@ -120,6 +128,7 @@ def parallel_generations(
         prefix=args.prefix,
         has_encoder=args.modeltype == "seq2seq",
         instruction_tokens=instruction_tokens,
+        expert_indices=expert_indices,
     )
 
     # do not confuse args.batch_size, which is actually the num_return_sequences

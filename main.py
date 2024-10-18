@@ -210,6 +210,16 @@ def parse_args():
         action="store_true",
         help="Don't run generation but benchmark groundtruth (useful for debugging)",
     )
+    parser.add_argument(
+        "--code_expert_indices",
+        type=int,
+        nargs="+",
+    )
+    parser.add_argument(
+        "--non_code_expert_indices",
+        type=int,
+        nargs="+",
+    )
     return parser.parse_args()
 
 

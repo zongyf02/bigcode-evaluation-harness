@@ -176,8 +176,8 @@ class HumanEvalPack(Task):
         elif self.prompt == "diff":
             stop_words = ["<commit_before>", "<commit_msg>", "<commit_after>"]
         elif self.prompt == "diff-carper":
-            stop_words = ["<BEF>", "<MSG>", "<DFF>", "\ No newline at end of file"]          
-        elif self.prompt == "issue":  
+            stop_words = ["<BEF>", "<MSG>", "<DFF>", "\ No newline at end of file"]
+        elif self.prompt == "issue" or self.prompt == "urf_moe":
             stop_words.append("```")
         stop_words.append("<|endoftext|>")
         self.with_docs = with_docs
@@ -245,6 +245,8 @@ class HumanEvalPack(Task):
             prompt = f"Source: user\n\n {inp.strip()} Source: assistant\nDestination: user \n\n{prompt_base}"
         elif self.prompt == "aurora-m":
             prompt = f'### Instruction:\n{inp}\n### Response:\n{prompt_base}'
+        elif self.prompt == "urf":
+            prompt = f"You are an exceptionally intelligent coding assistant that consistently delivers accurate and reliable responses to user instructions.\n\n@@ Instruction\n{inp}\n\n@@ Response\n```{LANGUAGE_TO_NAME[self.DATASET_NAME].lower()}\n{prompt_base}"
         else:
             raise ValueError(f"The --prompt argument {self.prompt} wasn't provided or isn't supported")
         # Strip off the final \n to make the tokens more natural

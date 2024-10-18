@@ -34,6 +34,7 @@ class TokenizedDataset(IterableDataset):
         prefix="",
         has_encoder=False,
         instruction_tokens=None,
+        expert_indices=None,
     ):
         self.task = task
         self.dataset = dataset
@@ -46,6 +47,7 @@ class TokenizedDataset(IterableDataset):
         self.prefix = prefix
         self.has_encoder = has_encoder
         self.instruction_tokens = instruction_tokens
+        self.expert_indices = expert_indices
 
     def __iter__(self):
         prompts = []
@@ -104,6 +106,7 @@ class TokenizedDataset(IterableDataset):
             max_length=self.max_length,
             return_token_type_ids=return_token_type_ids,
         )
+        extra_gen_kwargs = self._prepare_tokenized_outputs(prompts, outputs)
         if self.has_encoder:
             outputs_encoder = self.tokenizer(
                 prompts_encoder,
@@ -131,12 +134,14 @@ class TokenizedDataset(IterableDataset):
                         "input_len_encoder": outputs_encoder.attention_mask[
                             sample
                         ].sum(),
+                        "extra": {key: value[sample] for key, value in extra_gen_kwargs.items()},
                     }
                 else:
                     yield {
                         "ids": outputs.input_ids[sample],
                         "task_id": sample,
                         "input_len": outputs.attention_mask[sample].sum(),
+                        "extra": {key: value[sample] for key, value in extra_gen_kwargs.items()},
                     }
 
     def _make_infill_prompt(self, prefix, suffix, preprefix=""):
@@ -173,6 +178,19 @@ class TokenizedDataset(IterableDataset):
 
         return prompt
 
+    def _prepare_tokenized_outputs(self, prompts, outputs):
+        extra_gen_kwargs = {}
+        
+        if self.expert_indices is not None:
+            pattern = re.compile("```[a-zA-Z_]+")
+            code_starts = [match.end() if (match := pattern.search(prompt)) else (len(prompt) - 1) for prompt in prompts]
+            code_token_starts = [outputs.char_to_token(i, start) for i, start in enumerate(code_starts)]
+            expert_indices = [
+                self.expert_indices["non_code"] * code_token_start + self.expert_indices["code"] * (len(ids) - code_token_start)
+                for code_token_start, ids in zip(code_token_starts, outputs.input_ids)
+            ]
+            extra_gen_kwargs["expert_indices"] = torch.tensor(expert_indices, dtype=torch.int8)
+        return extra_gen_kwargs
 
 def _parse_infill(code, tokenizer):
     """Reorder infill code and remove remaining special tokens."""
@@ -277,6 +295,7 @@ def complete_code(
                         num_return_sequences=batch_size,
                         decoder_start_token_id=tokenizer.pad_token_id,
                         eos_token_id=tokenizer.eos_token_id,
+                        **batch["extra"],
                         **gen_kwargs,
                     )
                 else:
@@ -286,6 +305,7 @@ def complete_code(
                         num_return_sequences=batch_size,
                         decoder_start_token_id=tokenizer.pad_token_id,
                         eos_token_id=tokenizer.eos_token_id,
+                        **batch["extra"],
                         **gen_kwargs,
                     )
             else:
@@ -294,6 +314,7 @@ def complete_code(
                     generated_tokens = accelerator.unwrap_model(model).generate(
                         input_ids=inputs,
                         num_return_sequences=batch_size,
+                        **batch["extra"],
                         **gen_kwargs,
                     )
                 else:
@@ -303,6 +324,7 @@ def complete_code(
                         generated_tokens = model.generate(
                             input_ids=inputs,
                             num_return_sequences=batch_size,
+                            **batch["extra"],
                             **gen_kwargs,
                         )
                     except ValueError as e:
