@@ -186,7 +186,7 @@ class TokenizedDataset(IterableDataset):
             code_starts = [match.end() if (match := pattern.search(prompt)) else (len(prompt) - 1) for prompt in prompts]
             code_token_starts = [outputs.char_to_token(i, start) for i, start in enumerate(code_starts)]
             expert_indices = [
-                self.expert_indices["non_code"] * code_token_start + self.expert_indices["code"] * (len(ids) - code_token_start)
+                [self.expert_indices["non_code"]] * code_token_start + [self.expert_indices["code"]] * (len(ids) - code_token_start)
                 for code_token_start, ids in zip(code_token_starts, outputs.input_ids)
             ]
             extra_gen_kwargs["expert_indices"] = torch.tensor(expert_indices, dtype=torch.int8)
@@ -309,6 +309,7 @@ def complete_code(
                         **gen_kwargs,
                     )
             else:
+                assert(tokenizer.padding_side == "right"), tokenizer.padding_side
                 if is_wrapped:
                     # 8bit and 4bit models are wrapped in accelerator
                     generated_tokens = accelerator.unwrap_model(model).generate(
