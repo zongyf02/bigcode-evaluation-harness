@@ -15,6 +15,15 @@ _CITATION = """
 
 LANGUAGES = ["python", "cpp", "js", "java", "go", "rust"]
 
+URF_LANGUAGE_TO_NAME = {
+    "python": "python",
+    "cpp": "cpp",
+    "js": "javascript",
+    "java": "java",
+    "go": "go",
+    "rust": "rust",
+}
+
 LANGUAGE_TO_NAME = {
     "python": "Python",
     "cpp": "C++",
@@ -177,7 +186,7 @@ class HumanEvalPack(Task):
             stop_words = ["<commit_before>", "<commit_msg>", "<commit_after>"]
         elif self.prompt == "diff-carper":
             stop_words = ["<BEF>", "<MSG>", "<DFF>", "\ No newline at end of file"]
-        elif self.prompt == "issue" or self.prompt == "urf_moe":
+        elif self.prompt == "issue" or self.prompt == "urf":
             stop_words.append("```")
         stop_words.append("<|endoftext|>")
         self.with_docs = with_docs
@@ -246,7 +255,7 @@ class HumanEvalPack(Task):
         elif self.prompt == "aurora-m":
             prompt = f'### Instruction:\n{inp}\n### Response:\n{prompt_base}'
         elif self.prompt == "urf":
-            prompt = f"You are an exceptionally intelligent coding assistant that consistently delivers accurate and reliable responses to user instructions.\n\n@@ Instruction\n{inp}\n\n@@ Response\n```{LANGUAGE_TO_NAME[self.DATASET_NAME].lower()}\n{prompt_base}"
+            prompt = f"You are an exceptionally intelligent coding assistant that consistently delivers accurate and reliable responses to user instructions.\n\n@@ Instruction\n{inp}\n\n@@ Response\n{prompt_base}"
         else:
             raise ValueError(f"The --prompt argument {self.prompt} wasn't provided or isn't supported")
         # Strip off the final \n to make the tokens more natural
@@ -273,6 +282,13 @@ class HumanEvalPack(Task):
 
 class HumanEvalPackGenerative(HumanEvalPack):
     """Parent class for all HumanEvalPack tasks except describing code"""
+
+    def get_prompt(self, prompt_base, instruction, context=None):
+        if self.prompt == "urf": # Add code gen prefix
+            prompt_base = f"```{URF_LANGUAGE_TO_NAME[self.DATASET_NAME]}\n{prompt_base}"
+
+        return super().get_prompt(prompt_base, instruction, context)
+
     def check_fn(self, code):
         """
         Checks whether the generated code is finished.
@@ -529,6 +545,8 @@ class HumanEvalFixBase(HumanEvalPackGenerative):
         elif self.prompt == "issue":
             prompt = f"<issue_start>username_0: {instruction}\n\n```{context}```\nUpvotes: 100<issue_comment>username_1: Sure, here is the fixed code.\n\n```{prompt_base}"
         else:
+            if self.prompt == "urf": # Wrap code to fix in code block
+                context = f"```{URF_LANGUAGE_TO_NAME[self.DATASET_NAME]}\n{context.rstrip()}\n```"
             prompt = super().get_prompt(prompt_base, instruction, context)
         return prompt.strip()
 
@@ -589,7 +607,10 @@ class HumanEvalExplainDescribeBase(HumanEvalPack):
         prompt_base = self.get_prompt_base(doc)
         instruction = f"Provide a concise natural language description of the code using at most {len(doc['docstring'])} characters."
         context = prompt_base + doc["canonical_solution"]
-        
+
+        if self.prompt == "urf": # Wrap code to explain in code block
+            context = f"```{URF_LANGUAGE_TO_NAME[self.DATASET_NAME]}\n{context.rstrip()}\n```"
+
         return super().get_prompt("", instruction, context)
 
     def remove_last_block(self, text):
