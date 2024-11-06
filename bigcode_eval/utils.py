@@ -101,7 +101,7 @@ class TokenizedDataset(IterableDataset):
         outputs = self.tokenizer(
             prompts,
             padding=True,
-            truncation=True,
+            truncation=False,
             return_tensors="pt",
             max_length=self.max_length,
             return_token_type_ids=return_token_type_ids,
@@ -111,7 +111,7 @@ class TokenizedDataset(IterableDataset):
             outputs_encoder = self.tokenizer(
                 prompts_encoder,
                 padding=True,
-                truncation=True,
+                truncation=False,
                 return_tensors="pt",
                 max_length=self.max_length,
                 return_token_type_ids=return_token_type_ids,
