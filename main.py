@@ -211,7 +211,27 @@ def parse_args():
         help="Don't run generation but benchmark groundtruth (useful for debugging)",
     )
     parser.add_argument(
-        "--code_expert_indices",
+        "--python_expert_indices",
+        nargs="?", type=str,
+    )
+    parser.add_argument(
+        "--js_expert_indices",
+        nargs="?", type=str,
+    )
+    parser.add_argument(
+        "--java_expert_indices",
+        nargs="?", type=str,
+    )
+    parser.add_argument(
+        "--go_expert_indices",
+        nargs="?", type=str,
+    )
+    parser.add_argument(
+        "--cpp_expert_indices",
+        nargs="?", type=str,
+    )
+    parser.add_argument(
+        "--rust_expert_indices",
         nargs="?", type=str,
     )
     parser.add_argument(

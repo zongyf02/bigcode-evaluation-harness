@@ -110,10 +110,21 @@ def parallel_generations(
 
 
     expert_indices = None
-    if args.code_expert_indices and args.non_code_expert_indices:
+    if (args.non_code_expert_indices or
+        args.python_expert_indices or
+        args.js_expert_indices or
+        args.java_expert_indices or
+        args.go_expert_indices or
+        args.cpp_expert_indices or
+        args.rust_expert_indices):
         expert_indices = {
-            "code": [int(i) for i in args.code_expert_indices.split(",")],
-            "non_code": [int(i) for i in args.non_code_expert_indices.split(",")]
+            "non_code": [int(i) for i in args.non_code_expert_indices.split(",")],
+            "python": [int(i) for i in args.python_expert_indices.split(",")],
+            "javascript": [int(i) for i in args.js_expert_indices.split(",")],
+            "java": [int(i) for i in args.java_expert_indices.split(",")],
+            "go": [int(i) for i in args.go_expert_indices.split(",")],
+            "cpp": [int(i) for i in args.cpp_expert_indices.split(",")],
+            "rust": [int(i) for i in args.rust_expert_indices.split(",")],
         }
 
     ds_tokenized = TokenizedDataset(

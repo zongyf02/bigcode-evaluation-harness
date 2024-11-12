@@ -182,8 +182,10 @@ class TokenizedDataset(IterableDataset):
         extra_gen_kwargs = {}
         
         if self.expert_indices is not None:
-            code_block_pattern = re.compile(r"```[a-zA-Z0-9_]+(.+?```)", flags=re.DOTALL|re.IGNORECASE)
-            last_incomplete_code_block_pattern = re.compile(r"^.*```[a-zA-Z0-9_]+(.*)$", flags=re.DOTALL|re.IGNORECASE)
+            from itertools import repeat
+
+            code_block_pattern = re.compile(r"```([a-zA-Z0-9_]+)(.+?```)", flags=re.DOTALL|re.IGNORECASE)
+            last_incomplete_code_block_pattern = re.compile(r"^.*```([a-zA-Z0-9_]+)(.*)$", flags=re.DOTALL|re.IGNORECASE)
 
             expert_indices = [None] * len(prompts)
             for i, prompt in enumerate(prompts):
@@ -194,19 +196,21 @@ class TokenizedDataset(IterableDataset):
                 # Find and replace indices in code blocks
                 end = 0
                 for match in code_block_pattern.finditer(prompt):
-                    start, end = match.start(1), match.end(1)
-                    token_start, token_end = outputs.char_to_token(i, start), outputs.char_to_token(i, end)
-                    expert_indices[i][token_start:token_end] = [self.expert_indices["code"]] * (token_end - token_start)
+                    lang = match.group(1)
+                    start, end = match.start(2), match.end(2)
+                    token_start, token_end_m_one = outputs.char_to_token(i, start), outputs.char_to_token(i, end - 1)
+                    token_end = token_end_m_one + 1
+                    expert_indices[i][token_start:token_end] = repeat(self.expert_indices[lang], token_end - token_start)
                     # print(self.tokenizer.decode(outputs.input_ids[i][token_start:token_end]))
                     # print("################################################################")
 
                 match = last_incomplete_code_block_pattern.fullmatch(prompt[end:])
                 if match is not None:
-                    offset_start = match.start(1)
+                    lang = match.group(1)
+                    offset_start = match.start(2)
                     token_start = outputs.char_to_token(i, end + offset_start)
-                    expert_indices[i][token_start:] = [self.expert_indices["code"]] * (len(outputs.input_ids[i]) - token_start)
-                #     print(self.tokenizer.decode(outputs.input_ids[i][token_start:]))
-                # assert False
+                    expert_indices[i][token_start:] = repeat(self.expert_indices[lang], len(expert_indices[i]) - token_start)
+                    # print(self.tokenizer.decode(outputs.input_ids[i][token_start:]))
 
             extra_gen_kwargs["expert_indices"] = torch.tensor(expert_indices, dtype=torch.int8)
         return extra_gen_kwargs
