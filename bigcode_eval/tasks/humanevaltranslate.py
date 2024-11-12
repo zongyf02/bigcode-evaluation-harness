@@ -122,6 +122,7 @@ def create_all_tasks():
     for i in range(len(LANGUAGES)):
         for j in range(i + 1, len(LANGUAGES)):
             tasks[f"humanevaltranslate-{LANGUAGES[i]}-{LANGUAGES[j]}"] = create_task(LANGUAGES[i], LANGUAGES[j])
+            tasks[f"humanevaltranslate-{LANGUAGES[j]}-{LANGUAGES[i]}"] = create_task(LANGUAGES[j], LANGUAGES[i])
     return tasks
 
 
