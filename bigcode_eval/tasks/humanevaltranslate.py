@@ -161,18 +161,22 @@ class HumanEvalTranslateBase(Task):
 
     def get_prompt(self, doc):
         prompt_base = doc["target"]["declaration"]
-        instruction = f"Translate the code snippet from {self.SRC_DATASET_NAME} to {self.DATASET_NAME}.\n"
+        instruction = f"Translate the code snippet from {LANGUAGE_TO_NAME[self.SRC_DATASET_NAME]} to {LANGUAGE_TO_NAME[self.DATASET_NAME]}.\n"
         if self.prompt == "instruct":
             prompt = (instruction + doc["src"]["prompt"] + doc["src"]["canonical_solution"]).rstrip() + "\n\n" + prompt_base
         elif self.prompt == "deepseek":
             inp = instruction + doc["src"]["prompt"] + doc["src"]["canonical_solution"]
             prompt = f"You are an AI programming assistant, utilizing the Deepseek Coder model, developed by Deepseek Company, and you only answer questions related to computer science. For politically sensitive questions, security and privacy issues, and other non-computer science questions, you will refuse to answer\n### Instruction:\n{inp.strip()}\n### Response:\n{prompt_base}"
         elif self.prompt == "urf":
-            code_block_start_template = f"```{URF_LANGUAGE_TO_NAME[self.DATASET_NAME]}\n" + "{code}"
+            code_block_start_template = "```{lang}\n{code}"
             inp = instruction + code_block_start_template.format(
-                code = doc["src"]["prompt"] + doc["src"]["canonical_solution"]
-            ) + "```"
-            prompt_base = code_block_start_template.format(code=prompt_base)
+                lang = URF_LANGUAGE_TO_NAME[self.SRC_DATASET_NAME],
+                code = (doc["src"]["prompt"] + doc["src"]["canonical_solution"]).strip()
+            ) + "\n```"
+            prompt_base = code_block_start_template.format(
+                lang = URF_LANGUAGE_TO_NAME[self.DATASET_NAME],
+                code=prompt_base
+            )
             prompt = f"You are an exceptionally intelligent coding assistant that consistently delivers accurate and reliable responses to user instructions.\n\n@@ Instruction\n{inp}\n\n@@ Response\n{prompt_base}"
         else:
             raise ValueError(f"The --prompt argument {self.prompt} wasn't provided or isn't supported")
